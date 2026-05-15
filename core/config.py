@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     qdrant_api_key: str | None = None
     default_collection: str = "default"
 
+    # Redis / MongoDB / LLM Chat
+    redis_url: str = "redis://localhost:6379"
+    mongo_url: str = "mongodb://localhost:27017"
+    mongo_db_name: str = "ragagent"
+    tongyi_llm_model: str = "qwen-plus"
+
     # 上传限制
     max_upload_size_mb: int = 50
 

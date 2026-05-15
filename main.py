@@ -4,6 +4,7 @@ import logging
 from fastapi import FastAPI
 
 from api.documents import router as documents_router
+from api.chat import router as chat_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -15,8 +16,11 @@ app = FastAPI(
 
 # 内存 task 状态存储（进程重启后清空，首版可接受）
 app.state.tasks: dict = {}
+# 正在处理中的文件 MD5 集合，用于防止并发上传同一文件时的竞态条件
+app.state.in_flight_md5s: set = set()
 
 app.include_router(documents_router)
+app.include_router(chat_router)
 
 
 @app.get("/health")

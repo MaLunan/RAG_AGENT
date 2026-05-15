@@ -45,6 +45,7 @@ def _process_document(
     tasks: dict,
     store: QdrantStore,
     embedder: TongyiEmbedder,
+    in_flight_md5s: set,
 ) -> None:
     """后台异步处理：pipeline → embed → upsert。失败时回滚并标记状态。"""
     try:
@@ -54,7 +55,7 @@ def _process_document(
         texts = [c.page_content for c in chunks]
         vectors = embedder.embed_documents(texts)
 
-        # 二次 MD5 检查防并发竞态（若已存在则先删旧版本）
+        # 二次 MD5 检查：若同名文件已存在则先删旧版本（文件更新场景）
         if store.md5_exists(file_md5, collection):
             store.delete_by_md5(file_md5, collection)
 
@@ -70,6 +71,8 @@ def _process_document(
         tasks[task_id]["status"] = "failed"
         tasks[task_id]["error"] = str(exc)
     finally:
+        # 无论成功或失败，都要从 in_flight 集合中移除，允许后续上传
+        in_flight_md5s.discard(file_md5)
         Path(tmp_path).unlink(missing_ok=True)
 
 
@@ -107,13 +110,16 @@ async def upload_document(
             detail=f"Unsupported file type: '{suffix}'. Supported: pdf, docx, md, csv, txt.",
         )
 
-    # 3. MD5 去重
+    # 3. MD5 去重（先查 in_flight 再查 Qdrant，避免并发上传竞态）
     file_md5 = compute_md5(content)
-    if store.md5_exists(file_md5, collection):
+    in_flight_md5s: set = request.app.state.in_flight_md5s
+    if file_md5 in in_flight_md5s or store.md5_exists(file_md5, collection):
         raise HTTPException(
             status_code=409,
             detail={"status": "duplicate", "file_md5": file_md5},
         )
+    # 标记为处理中，防止同一文件在后台任务完成前被重复提交
+    in_flight_md5s.add(file_md5)
 
     # 4. 写入临时文件（BackgroundTask 读取后自动删除）
     tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
@@ -134,6 +140,7 @@ async def upload_document(
         tasks=request.app.state.tasks,
         store=store,
         embedder=embedder,
+        in_flight_md5s=in_flight_md5s,
     )
 
     return {"task_id": task_id, "status": "processing"}

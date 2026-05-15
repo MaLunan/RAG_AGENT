@@ -19,6 +19,8 @@ dependencies = [
     "dashscope>=1.20.0",
     "python-multipart>=0.0.9",
     "unstructured>=0.14.0",
+    "redis>=5.0.0",
+    "motor>=3.4.0",
 ]
 
 [dependency-groups]
@@ -29,7 +31,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["core", "api", "document_processing", "embeddings", "vectorstore", "retrieval"]
+packages = ["core", "api", "chat", "document_processing", "embeddings", "vectorstore", "retrieval"]
 
 [build-system]
 requires = ["hatchling"]

@@ -91,14 +91,19 @@ class QdrantStore:
         top_k: int,
         score_threshold: float,
     ) -> list[dict]:
-        """语义检索，返回高于阈值的 top-k 结果。"""
-        hits = self._client.search(
-            collection_name=collection,
-            query_vector=query_vector,
-            limit=top_k,
-            score_threshold=score_threshold,
-            with_payload=True,
-        )
+        """语义检索，返回高于阈值的 top-k 结果。collection 不存在时返回空列表。"""
+        try:
+            # qdrant-client >= 1.7 使用 query_points 替代已移除的 search
+            response = self._client.query_points(
+                collection_name=collection,
+                query=query_vector,
+                limit=top_k,
+                score_threshold=score_threshold,
+                with_payload=True,
+            )
+        except Exception:
+            # collection 不存在或其他检索异常，返回空结果
+            return []
         return [
             {
                 "content": hit.payload.get("text", ""),
@@ -107,7 +112,7 @@ class QdrantStore:
                 # metadata 中排除 text 字段（避免重复）
                 "metadata": {k: v for k, v in hit.payload.items() if k != "text"},
             }
-            for hit in hits
+            for hit in response.points
         ]
 
     def list_collections(self) -> list[str]:
