@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from core.config import settings
 from core.dependencies import get_embedder, get_retriever, get_store
-from document_processing.pipeline import DocumentPipeline, compute_md5, get_loader
+from document_processing.pipeline import DocumentPipeline, compute_md5
 from embeddings.tongyi_embedder import TongyiEmbedder
 from retrieval.retriever import Retriever
 from vectorstore.qdrant_store import QdrantStore
