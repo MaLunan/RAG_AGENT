@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from core.config import settings
 from core.dependencies import get_embedder, get_retriever, get_store
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 SUPPORTED_EXTENSIONS = {
     ".pdf", ".PDF",
     ".docx", ".DOCX",
-    ".md", ".MD", ".markdown",
+    ".md", ".MD", ".markdown", ".MARKDOWN",
     ".csv", ".CSV",
     ".txt", ".TXT",
 }
@@ -32,11 +32,11 @@ MAX_UPLOAD_BYTES = settings.max_upload_size_mb * 1024 * 1024
 class SearchRequest(BaseModel):
     query: str
     collection: str = "default"
-    top_k: int = 5
-    score_threshold: float = 0.7
+    top_k: int = Field(default_factory=lambda: settings.top_k)
+    score_threshold: float = Field(default_factory=lambda: settings.score_threshold)
 
 
-async def _process_document(
+def _process_document(
     tmp_path: str,
     file_name: str,
     file_md5: str,

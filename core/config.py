@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     score_threshold: float = 0.7
     top_k: int = 5
 
+    # 向量维度（tongyi embedding model 实际维度，以 DashScope 文档为准）
+    vector_size: int = 1536
+
     # 分块参数
     chunk_size: int = 1000
     chunk_overlap: int = 200

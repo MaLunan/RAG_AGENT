@@ -11,12 +11,11 @@ from qdrant_client.models import (
 )
 from langchain_core.documents import Document
 
+from core.config import settings
+
 
 class QdrantStore:
     """封装 Qdrant 向量库操作：建 collection、MD5 查重、upsert、删除、检索。"""
-
-    # tongyi-embedding-vision-plus 向量维度，实际以 DashScope 文档为准
-    VECTOR_SIZE = 1536
 
     def __init__(self, client: QdrantClient) -> None:
         self._client = client
@@ -27,7 +26,7 @@ class QdrantStore:
         if collection not in existing_names:
             self._client.create_collection(
                 collection_name=collection,
-                vectors_config=VectorParams(size=self.VECTOR_SIZE, distance=Distance.COSINE),
+                vectors_config=VectorParams(size=settings.vector_size, distance=Distance.COSINE),
             )
 
     def md5_exists(self, file_md5: str, collection: str) -> bool:
@@ -67,20 +66,23 @@ class QdrantStore:
 
     def delete_by_md5(self, file_md5: str, collection: str) -> int:
         """删除 collection 中所有匹配该 MD5 的 point，返回删除数量。"""
-        scroll_result, _ = self._client.scroll(
-            collection_name=collection,
-            scroll_filter=Filter(
-                must=[FieldCondition(key="file_md5", match=MatchValue(value=file_md5))]
-            ),
-            limit=10000,
-        )
-        point_ids = [p.id for p in scroll_result]
-        if point_ids:
-            self._client.delete(
+        try:
+            scroll_result, _ = self._client.scroll(
                 collection_name=collection,
-                points_selector=point_ids,
+                scroll_filter=Filter(
+                    must=[FieldCondition(key="file_md5", match=MatchValue(value=file_md5))]
+                ),
+                limit=10000,
             )
-        return len(point_ids)
+            point_ids = [p.id for p in scroll_result]
+            if point_ids:
+                self._client.delete(
+                    collection_name=collection,
+                    points_selector=point_ids,
+                )
+            return len(point_ids)
+        except Exception:
+            return 0
 
     def search(
         self,

@@ -21,8 +21,18 @@ app.include_router(documents_router)
 
 @app.get("/health")
 async def health():
-    """健康检查，可用于验证 Qdrant 连接。"""
-    return {"status": "ok"}
+    """健康检查，验证 Qdrant 连接可用。"""
+    from core.dependencies import get_qdrant_client
+    try:
+        client = get_qdrant_client()
+        client.get_collections()
+        return {"status": "ok", "qdrant": "connected"}
+    except Exception as exc:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "qdrant": str(exc)}
+        )
 
 
 @app.get("/")
