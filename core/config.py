@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     mongo_url: str = "mongodb://localhost:27017"
     mongo_db_name: str = "ragagent"
-    tongyi_llm_model: str = "qwen-plus"
+    tongyi_llm_model: str = "qwen3.6-plus"
 
     # 上传限制
     max_upload_size_mb: int = 50
