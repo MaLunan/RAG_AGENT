@@ -18,14 +18,14 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     mongo_url: str = "mongodb://localhost:27017"
     mongo_db_name: str = "ragagent"
-    tongyi_llm_model: str = "qwen3.6-plus"
+    tongyi_llm_model: str = "qwen-plus"
 
     # 上传限制
     max_upload_size_mb: int = 50
 
     # 检索参数
     score_threshold: float = 0.7
-    top_k: int = 5
+    top_k: int = 1
 
     # 向量维度（tongyi embedding model 实际维度，以 DashScope 文档为准）
     vector_size: int = 1536
